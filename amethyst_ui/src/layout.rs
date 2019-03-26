@@ -120,6 +120,13 @@ pub enum Stretch {
         /// The margin length for the height
         y_margin: f32,
     },
+    /// Stretches on both axes, and adds margin to one axis to keep the component's aspect ratio.
+    KeepAspectRatio {
+        /// The minimum margin length for the width
+        x_minimum_margin: f32,
+        /// The minimum margin length for the height
+        y_minimum_margin: f32,
+    },
 }
 
 /// Manages the `Parent` component on entities having `UiTransform`
@@ -250,6 +257,19 @@ impl<'a> System<'a> for UiTransformSystem {
                             parent_transform_copy.pixel_width - x_margin * 2.0,
                             parent_transform_copy.pixel_height - y_margin * 2.0,
                         ),
+                        Stretch::KeepAspectRatio {
+                            x_minimum_margin,
+                            y_minimum_margin,
+                        } => {
+                            let scale = f32::min(
+                                (parent_transform_copy.pixel_width - x_minimum_margin * 2.0)
+                                    / transform.width,
+                                (parent_transform_copy.pixel_height - y_minimum_margin * 2.0)
+                                    / transform.height,
+                            );
+
+                            (transform.width * scale, transform.height * scale)
+                        }
                     };
                     transform.width = new_size.0;
                     transform.height = new_size.1;
@@ -323,6 +343,17 @@ where
                 screen_dim.width() - x_margin * 2.0,
                 screen_dim.height() - y_margin * 2.0,
             ),
+            Stretch::KeepAspectRatio {
+                x_minimum_margin,
+                y_minimum_margin,
+            } => {
+                let scale = f32::min(
+                    (screen_dim.width() - x_minimum_margin * 2.0) / transform.width,
+                    (screen_dim.height() - y_minimum_margin * 2.0) / transform.height,
+                );
+
+                (transform.width * scale, transform.height * scale)
+            }
         };
         transform.width = new_size.0;
         transform.height = new_size.1;
